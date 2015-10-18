@@ -46,11 +46,12 @@ sendout_message(Connections, Msg) ->
 client_loop(Server, Socket, Acc) ->
   case gen_tcp:recv(Socket, 0) of
     {ok, Packet} ->
-      case Packet of
-        [_Data | "\n"] ->
-          parse_message(Server, Socket, (Acc ++ Packet)),
+      case lists:reverse(Packet) of
+        [$\n | _Data] ->
+          Commands = string:tokens(Acc ++ Packet, "\n"),
+          lists:map(fun(C)-> parse_message(Server, Socket, C ++ "\n") end, Commands),
           client_loop(Server, Socket, "");
-        Data -> client_loop(Server, Socket, Acc ++ Data)
+        _ -> client_loop(Server, Socket, Acc ++ Packet)
       end;
     {error, _} ->
       Server ! {disconnected, Socket},
