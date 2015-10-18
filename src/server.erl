@@ -47,7 +47,7 @@ client_loop(Server, Socket, Acc) ->
   case gen_tcp:recv(Socket, 0) of
     {ok, Packet} ->
       case Packet of
-        [Data | "\n"] ->
+        [_Data | "\n"] ->
           parse_message(Server, Socket, (Acc ++ Packet)),
           client_loop(Server, Socket, "");
         Data -> client_loop(Server, Socket, Acc ++ Data)
