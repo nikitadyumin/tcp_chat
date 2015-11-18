@@ -28,16 +28,13 @@ tcp_connection_loop(Server, LSock) ->
 server_loop(Connections) ->
   receive
     {connected, Socket} -> server_loop(maps:put(Socket, "", Connections));
-    {disconnected, Socket} -> server_loop(list_without(Socket, Connections));
+    {disconnected, Socket} -> server_loop(maps:remove(Socket, Connections));
     {name, Socket, Name} -> server_loop(maps:update(Socket, Name ++ ": ", Connections));
     {msg, Receiver, Data} ->
-      sendout_message(list_without(Receiver, Connections), maps:get(Receiver, Connections) ++ Data),
+      sendout_message(maps:remove(Receiver, Connections), maps:get(Receiver, Connections) ++ Data),
       server_loop(Connections);
     {close} -> ok
   end.
-
-list_without(Item, List) ->
-  maps:remove(Item, List).
 
 sendout_message(Connections, Msg) ->
   List = maps:keys(Connections),
