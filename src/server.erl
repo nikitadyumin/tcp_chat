@@ -59,6 +59,8 @@ parse_message(Server, Client, Msg) ->
   case strip_eol(Msg) of
     "\\help" -> gen_tcp:send(Client, "available commands:\r\n help\r\n greetme\r\n name YOUR_NAME\r\n");
     "\\greetme" -> gen_tcp:send(Client, "hi\r\n");
+    "\\quit " -> Server ! {disconnected, Client};
+    "\\shutdown " -> Server ! {close};
     "\\name " ++ Name ->
       Server ! {name, Client, Name},
       gen_tcp:send(Client, "your name is: " ++ Name ++ "\r\n");
