@@ -2,7 +2,15 @@
 %%% @author Никита
 %%% @copyright (C) 2015, <COMPANY>
 %%% @doc
-%%%
+%%% module implements a basic tcp chat
+%%%   a server starts listening on all interfaces, port 6667
+%%%   all the messages are resent to every connected client
+%%%   it supports commands:
+%%%   - \help           prints the list of commands
+%%%   - \greetme [name] greets the user
+%%%   - \quit           closes the client connection
+%%%   - \shutdown       shuts down server
+%%%   - \name [name]    changes the name of the connection
 %%% @end
 %%% Created : 17. Окт. 2015 9:28
 %%%-------------------------------------------------------------------
