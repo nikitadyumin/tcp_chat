@@ -21,6 +21,7 @@
 -export([listen/0]).
 
 -define(TCP_OPTIONS, [list, {packet, 0}, {active, false}, {reuseaddr, true}, {ip, {0, 0, 0, 0}}]).
+-define(DEFAULT_NAME, "client").
 
 listen() ->
   {ok, LSock} = gen_tcp:listen(6667, ?TCP_OPTIONS),
@@ -35,18 +36,19 @@ tcp_connection_loop(Server, LSock) ->
 
 server_loop(Connections) ->
   receive
-    {connected, Socket} -> server_loop(maps:put(Socket, "", Connections));
+    {connected, Socket} -> server_loop(maps:put(Socket, ?DEFAULT_NAME, Connections));
     {disconnected, Socket} -> server_loop(maps:remove(Socket, Connections));
-    {name, Socket, Name} -> server_loop(maps:update(Socket, Name ++ ": ", Connections));
+    {name, Socket, Name} -> server_loop(maps:update(Socket, Name, Connections));
     {msg, Receiver, Data} ->
-      sendout_message(maps:remove(Receiver, Connections), maps:get(Receiver, Connections) ++ Data),
+      sendout_message(maps:remove(Receiver, Connections), maps:get(Receiver, Connections), Data),
       server_loop(Connections);
     {close} -> ok
   end.
 
-sendout_message(Connections, Msg) ->
+sendout_message(Connections, Name, Data) ->
   List = maps:keys(Connections),
-  lists:map(fun(C) -> gen_tcp:send(C, Msg) end, List).
+  Message = Name ++ ": " ++ Data,
+  lists:map(fun(C) -> gen_tcp:send(C, Message) end, List).
 
 client_loop(Server, Socket, Acc) ->
   case gen_tcp:recv(Socket, 0) of
