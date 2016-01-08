@@ -22,18 +22,33 @@
 
 -define(TCP_OPTIONS, [list, {packet, 0}, {active, false}, {reuseaddr, true}, {ip, {0, 0, 0, 0}}]).
 -define(DEFAULT_NAME, "client").
+-define(EMPTY_DATA, "").
 
 listen() ->
   {ok, LSock} = gen_tcp:listen(6667, ?TCP_OPTIONS),
   Server = spawn(fun() -> server_loop(maps:new()) end),
   tcp_connection_loop(Server, LSock).
 
+%%% @doc
+%%% tcp loop
+%%% on a new tcp connection
+%%%   1. it registers the connection in a server loop
+%%%   2. it creates a client loop
+%%% @end
+%%% @private
 tcp_connection_loop(Server, LSock) ->
   {ok, Socket} = gen_tcp:accept(LSock),
   Server ! {connected, Socket},
-  spawn(fun() -> client_loop(Server, Socket, "") end),
+  spawn(fun() -> client_loop(Server, Socket, ?EMPTY_DATA) end),
   tcp_connection_loop(Server, LSock).
 
+%%% @doc
+%%% main loop, that handles client connections
+%%% `Connections` is a map that stores connection information
+%%% (connection handler as key, "display name" as a value)
+%%%
+%%% @end
+%%% @private
 server_loop(Connections) ->
   receive
     {connected, Socket} -> server_loop(maps:put(Socket, ?DEFAULT_NAME, Connections));
@@ -45,11 +60,24 @@ server_loop(Connections) ->
     {close} -> ok
   end.
 
+%%% @doc
+%%% sends out provided message under the given name to all the connections
+%%% from the `Connections` map
+%%%
+%%% @end
+%%% @private
 sendout_message(Connections, Name, Data) ->
   List = maps:keys(Connections),
   Message = Name ++ ": " ++ Data,
   lists:map(fun(C) -> gen_tcp:send(C, Message) end, List).
 
+%%% @doc
+%%% client loop
+%%% on input it accumulates data, splits it into chunks by "\n"
+%%% and dispatches them via `parse_message`
+%%%
+%%% @end
+%%% @private
 client_loop(Server, Socket, Acc) ->
   case gen_tcp:recv(Socket, 0) of
     {ok, Packet} ->
