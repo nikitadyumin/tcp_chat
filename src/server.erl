@@ -23,6 +23,7 @@
 -define(TCP_OPTIONS, [list, {packet, 0}, {active, false}, {reuseaddr, true}, {ip, {0, 0, 0, 0}}]).
 -define(DEFAULT_NAME, "client").
 -define(EMPTY_DATA, "").
+-define(MESSAGE_DELIMITER, "\n").
 
 listen() ->
   {ok, LSock} = gen_tcp:listen(6667, ?TCP_OPTIONS),
@@ -82,10 +83,10 @@ client_loop(Server, Socket, Acc) ->
   case gen_tcp:recv(Socket, 0) of
     {ok, Packet} ->
       case lists:reverse(Packet) of
-        [$\n | _Data] ->
-          Commands = string:tokens(Acc ++ Packet, "\n"),
-          lists:map(fun(C)-> parse_message(Server, Socket, C ++ "\n") end, Commands),
-          client_loop(Server, Socket, "");
+        [?MESSAGE_DELIMITER | _Data] ->
+          Commands = string:tokens(Acc ++ Packet, ?MESSAGE_DELIMITER),
+          lists:map(fun(C)-> parse_message(Server, Socket, C ++ ?MESSAGE_DELIMITER) end, Commands),
+          client_loop(Server, Socket, ?EMPTY_DATA);
         _ -> client_loop(Server, Socket, Acc ++ Packet)
       end;
     {error, _} ->
